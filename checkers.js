@@ -18,6 +18,8 @@ var state = {
 };
 var boardDiv = null;
 var cells = [];
+var rows = [];
+var draggingCell = null;
 
 /**
  * Initial page load
@@ -36,6 +38,7 @@ window.onload = function () {
     rowDiv.className = 'RowDiv';
     boardDiv.appendChild(rowDiv);
     cells.push([]);
+    rows.push(rowDiv);
     //Loop through all cells in each row
     for (var x = 0; x < row.length; x++) {
       var value = row[x];
@@ -47,9 +50,12 @@ window.onload = function () {
       if (value != null) {
         cellDiv.innerText = value;
       }
-      //Add dragable ability
+      //Add draggable ability
       cellDiv.setAttribute('draggable', true);
-      cellDiv.addEventListener('ondragstart', cellDragStart);
+      cellDiv.addEventListener('dragstart', cellDragStart);
+      cellDiv.addEventListener('drop', cellDropEvent);
+      cellDiv.addEventListener('dragover', cellAllowDragEvent);
+      cellDiv.id = x+','+y;
       //Add cell to cell array
       cells[y].push(cellDiv);
     }
@@ -61,7 +67,43 @@ window.onload = function () {
  * @param event
  */
 function cellDragStart(event) {
+  draggingCell = event.target;
+}
 
+/**
+ * Handles cell drop event.
+ * @param event
+ */
+function cellDropEvent(event) {
+  var droppedOnCell = event.target;
+
+  //Swap the UI values for the cells for updating the interface
+  var cellDragOldValue = draggingCell.innerText;
+  var cellDropOldValue = droppedOnCell.innerText;
+
+  draggingCell.innerText = cellDropOldValue;
+  droppedOnCell.innerText = cellDragOldValue;
+
+  //Replace the states held in State object
+  var dragX = parseInt(draggingCell.id.substr(0, draggingCell.id.indexOf(',')));
+  var dragY = parseInt(draggingCell.id.substr(draggingCell.id.indexOf(',')+1));
+  var dropX = parseInt(droppedOnCell.id.substr(0, droppedOnCell.id.indexOf(',')));
+  var dropY = parseInt(droppedOnCell.id.substr(droppedOnCell.id.indexOf(',')+1));
+
+  var oldDragValue = state.board[dragY][dragX];
+  var oldDropValue = state.board[dropY][dropX];
+
+  //Set the values
+  state.board[dragY][dragX] = oldDropValue;
+  state.board[dropY][dropX] = oldDragValue;
+}
+
+/**
+ * Allows the cell to allow drops.
+ * @param event
+ */
+function cellAllowDragEvent(event) {
+  event.preventDefault();
 }
 
 /** @function getLegalMoves
