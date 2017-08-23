@@ -16,13 +16,16 @@ var state = {
     ['b',null,'b',null,'b',null,'b',null,'b',null]
   ]
 };
+/** Holds the board div interface element */
 var boardDiv = null;
-var cells = [];
-var rows = [];
-var draggingCell = null;
+/** Arrays of interface elements for keeping track */
+var cellDivs = [];
+var rowDivs = [];
+/** The cell that is being dragged */
+var draggingCellDiv = null;
 
 /**
- * Initial page load
+ * Initial page load - Use this to create the interface
  */
 window.onload = function () {
   //Create the board
@@ -37,8 +40,8 @@ window.onload = function () {
     var rowDiv = document.createElement('div');
     rowDiv.className = 'RowDiv';
     boardDiv.appendChild(rowDiv);
-    cells.push([]);
-    rows.push(rowDiv);
+    cellDivs.push([]);
+    rowDivs.push(rowDiv);
     //Loop through all cells in each row
     for (var x = 0; x < row.length; x++) {
       var value = row[x];
@@ -55,22 +58,24 @@ window.onload = function () {
       cellDiv.addEventListener('dragstart', cellDragStart);
       cellDiv.addEventListener('drop', cellDropEvent);
       cellDiv.addEventListener('dragover', cellAllowDragEvent);
+      //Set the id to the x and y position of the cell so we can
+      //modify the state board using this information
       cellDiv.id = x+','+y;
       //Add cell to cell array
-      cells[y].push(cellDiv);
+      cellDivs[y].push(cellDiv);
     }
   }
 };
 
-/**
+/** @function cellDragStart
  * Handles cell start drag event.
  * @param event
  */
 function cellDragStart(event) {
-  draggingCell = event.target;
+  draggingCellDiv = event.target;
 }
 
-/**
+/** @function cellDropEvent
  * Handles cell drop event.
  * @param event
  */
@@ -78,15 +83,15 @@ function cellDropEvent(event) {
   var droppedOnCell = event.target;
 
   //Swap the UI values for the cells for updating the interface
-  var cellDragOldValue = draggingCell.innerText;
+  var cellDragOldValue = draggingCellDiv.innerText;
   var cellDropOldValue = droppedOnCell.innerText;
 
-  draggingCell.innerText = cellDropOldValue;
+  draggingCellDiv.innerText = cellDropOldValue;
   droppedOnCell.innerText = cellDragOldValue;
 
   //Replace the states held in State object
-  var dragX = parseInt(draggingCell.id.substr(0, draggingCell.id.indexOf(',')));
-  var dragY = parseInt(draggingCell.id.substr(draggingCell.id.indexOf(',')+1));
+  var dragX = parseInt(draggingCellDiv.id.substr(0, draggingCellDiv.id.indexOf(',')));
+  var dragY = parseInt(draggingCellDiv.id.substr(draggingCellDiv.id.indexOf(',')+1));
   var dropX = parseInt(droppedOnCell.id.substr(0, droppedOnCell.id.indexOf(',')));
   var dropY = parseInt(droppedOnCell.id.substr(droppedOnCell.id.indexOf(',')+1));
 
@@ -98,7 +103,7 @@ function cellDropEvent(event) {
   state.board[dropY][dropX] = oldDragValue;
 }
 
-/**
+/** @function cellAllowDragEvent
  * Allows the cell to allow drops.
  * @param event
  */
