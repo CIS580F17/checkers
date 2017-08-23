@@ -15,6 +15,53 @@ var state = {
     [null,'b',null,'b',null,'b',null,'b',null,'b'],
     ['b',null,'b',null,'b',null,'b',null,'b',null]
   ]
+};
+var boardDiv = null;
+var cells = [];
+
+/**
+ * Initial page load
+ */
+window.onload = function () {
+  //Create the board
+  boardDiv = document.createElement('div');
+  boardDiv.className = 'BoardDiv';
+  document.body.appendChild(boardDiv);
+
+  //Loop through all the horizontal rows
+  for (var y = 0; y < state.board.length; y++) {
+    var row = state.board[y];
+    //Create a row div for each row
+    var rowDiv = document.createElement('div');
+    rowDiv.className = 'RowDiv';
+    boardDiv.appendChild(rowDiv);
+    cells.push([]);
+    //Loop through all cells in each row
+    for (var x = 0; x < row.length; x++) {
+      var value = row[x];
+      //Creates the cell interface element for each cell
+      var cellDiv = document.createElement('div');
+      cellDiv.className = 'CellDiv';
+      rowDiv.appendChild(cellDiv);
+      //Set the value of the cell div
+      if (value != null) {
+        cellDiv.innerText = value;
+      }
+      //Add dragable ability
+      cellDiv.setAttribute('draggable', true);
+      cellDiv.addEventListener('ondragstart', cellDragStart);
+      //Add cell to cell array
+      cells[y].push(cellDiv);
+    }
+  }
+};
+
+/**
+ * Handles cell start drag event.
+ * @param event
+ */
+function cellDragStart(event) {
+
 }
 
 /** @function getLegalMoves
