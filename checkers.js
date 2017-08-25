@@ -19,8 +19,7 @@ var state = {
 /** Holds the board div interface element */
 var boardDiv = null;
 /** Arrays of interface elements for keeping track */
-var cellDivs = [];
-var rowDivs = [];
+var cellDivs = []; //Matches the format of "board"
 /** The cell that is being dragged */
 var draggingCellDiv = null;
 
@@ -41,7 +40,6 @@ window.onload = function () {
     rowDiv.className = 'RowDiv';
     boardDiv.appendChild(rowDiv);
     cellDivs.push([]);
-    rowDivs.push(rowDiv);
     //Loop through all cells in each row
     for (var x = 0; x < row.length; x++) {
       var value = row[x];
@@ -82,13 +80,6 @@ function cellDragStart(event) {
 function cellDropEvent(event) {
   var droppedOnCell = event.target;
 
-  //Swap the UI values for the cells for updating the interface
-  var cellDragOldValue = draggingCellDiv.innerText;
-  var cellDropOldValue = droppedOnCell.innerText;
-
-  draggingCellDiv.innerText = cellDropOldValue;
-  droppedOnCell.innerText = cellDragOldValue;
-
   //Replace the states held in State object
   var dragX = parseInt(draggingCellDiv.id.substr(0, draggingCellDiv.id.indexOf(',')));
   var dragY = parseInt(draggingCellDiv.id.substr(draggingCellDiv.id.indexOf(',')+1));
@@ -101,6 +92,9 @@ function cellDropEvent(event) {
   //Set the values
   state.board[dragY][dragX] = oldDropValue;
   state.board[dropY][dropX] = oldDragValue;
+
+  //Update the UI
+  fullInterfaceRedraw();
 }
 
 /** @function cellAllowDragEvent
@@ -109,6 +103,23 @@ function cellDropEvent(event) {
  */
 function cellAllowDragEvent(event) {
   event.preventDefault();
+}
+
+/** @function fullInterfaceRedraw
+ * Redraws the interface to match the board state.
+ */
+function fullInterfaceRedraw() {
+  for (var y = 0; y < state.board.length; y++) {
+    var row = state.board[y];
+    //Loop through all cells in each row
+    for (var x = 0; x < row.length; x++) {
+      var value = row[x];
+      if (value === null) {
+        value = '';
+      }
+      cellDivs[y][x].innerText = value;
+    }
+  }
 }
 
 /** @function getLegalMoves
@@ -245,8 +256,26 @@ function checkLanding(moves, jumps, piece, cx, cy, lx, ly) {
   * A function to apply the selected move to the game
   * @param {object} move - the move to apply.
   */
-function applyMove(move) {
+function applyMove(x, y, move) {
+
+  if (move.type === 'slide') {
+    this.board[move.y][move.x] = this.board[y][x];
+    this.board[y][x] = null;
+  }
+
   // TODO: Apply the move
   // TODO: Check for victory
   // TODO: Start the next turn
+}
+
+function checkForVictory() {
+
+}
+
+function nextTurn() {
+  if (state.turn === 'b') {
+    state.turn = 'w';
+  } else {
+    state.turn = 'b';
+  }
 }
