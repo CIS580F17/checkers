@@ -48,11 +48,11 @@ window.onload = function () {
       cellDiv.className = 'CellDiv';
       rowDiv.appendChild(cellDiv);
       //Set the value of the cell div
-      if (value != null) {
+      if (value !== null) {
         cellDiv.innerText = value;
       }
       //Add draggable ability
-      cellDiv.setAttribute('draggable', true);
+      cellDiv.setAttribute('draggable', 'true');
       cellDiv.addEventListener('dragstart', cellDragStart);
       cellDiv.addEventListener('drop', cellDropEvent);
       cellDiv.addEventListener('dragover', cellAllowDragEvent);
@@ -183,7 +183,7 @@ function copyJumps(jumps) {
   var newJumps = {
     landings: jumps.landings.slice(),
     captures: jumps.captures.slice()
-  }
+  };
   return newJumps;
 }
 
@@ -257,10 +257,16 @@ function checkLanding(moves, jumps, piece, cx, cy, lx, ly) {
   * @param {object} move - the move to apply.
   */
 function applyMove(x, y, move) {
-
   if (move.type === 'slide') {
-    this.board[move.y][move.x] = this.board[y][x];
-    this.board[y][x] = null;
+    state.board[move.y][move.x] = state.board[y][x];
+    state.board[y][x] = null;
+  } else if (move.type === 'jump') {
+    move.captures.forEach(function (square) {
+      state.board[square.y][square.x] = null;
+    });
+    var index = move.landings.length-1;
+    state.board[move.landings[index.y]][move.landings[index].x] = state.board[y][x];
+    state.board[y][x] = null;
   }
 
   // TODO: Apply the move
@@ -268,14 +274,46 @@ function applyMove(x, y, move) {
   // TODO: Start the next turn
 }
 
+/** @function checkForVictory
+ * Checks to see if black or white has won.
+ * @returns {*} - Returns null if no victory, 'black wins' if black won,
+ * 'white wins' if white won.
+ */
 function checkForVictory() {
-
+  var blackCount = 0;
+  var whiteCount = 0;
+  for (var y = 0; y < state.board.length; y++) {
+    var row = state.board[y];
+    for (var x = 0; x < row.length; x++) {
+      var value = row[x];
+      if (value === 'w' || value === 'wk') {
+        whiteCount += 1;
+      } else if (value === 'b' || value === 'bk') {
+        blackCount += 1;
+      }
+    }
+  }
+  if (whiteCount == 0) {
+    state.over = true;
+    return 'black wins';
+  } else if (blackCount == 0) {
+    state.over = true;
+    return 'white wins';
+  }
+  return null;
 }
 
+/** @function nextTurn
+ * Switches the turn.
+ */
 function nextTurn() {
   if (state.turn === 'b') {
     state.turn = 'w';
   } else {
     state.turn = 'b';
   }
+}
+
+function main() {
+
 }
