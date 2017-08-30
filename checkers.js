@@ -1,5 +1,19 @@
 // checkers.js
 
+readline = null;
+if (isRunningInWebpage() == false) {
+  readline = require('readline');
+}
+
+//Check if running in the webpage or in the console
+function isRunningInWebpage() {
+  if (typeof window === 'undefined') {
+    return false;
+  } else {
+    return true;
+  }
+}
+
 /** The state of the game */
 var state = {
   over: false,
@@ -8,6 +22,7 @@ var state = {
     [null,'w',null,'w',null,'w',null,'w',null,'w'],
     ['w',null,'w',null,'w',null,'w',null,'w',null],
     [null,'w',null,'w',null,'w',null,'w',null,'w'],
+    [null, null, null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, null, null, null],
@@ -26,7 +41,7 @@ var draggingCellDiv = null;
 /**
  * Initial page load - Use this to create the interface
  */
-window.onload = function () {
+function createVisualUI () {
   //Create the board
   boardDiv = document.createElement('div');
   boardDiv.className = 'BoardDiv';
@@ -63,7 +78,7 @@ window.onload = function () {
       cellDivs[y].push(cellDiv);
     }
   }
-};
+}
 
 /** @function cellDragStart
  * Handles cell start drag event.
@@ -201,19 +216,19 @@ function copyJumps(jumps) {
 function checkJump(moves, jumps, piece, x, y) {
   switch(piece) {
     case 'b': // black can only move down the board diagonally
-      checkLanding(moves, copyJumps(jumps), x-1, y+1, x-2, y+2);
-      checkLanding(moves, copyJumps(jumps), x+1, y+1, x+2, y+2);
+      checkLanding(moves, copyJumps(jumps), piece, x-1, y+1, x-2, y+2);
+      checkLanding(moves, copyJumps(jumps), piece, x+1, y+1, x+2, y+2);
       break;
     case 'w':  // white can only move up the board diagonally
-      checkLanding(moves, copyJumps(jumps), x-1, y-1, x-2, y-2);
-      checkLanding(moves, copyJumps(jumps), x+1, y-1, x+2, y-2);
+      checkLanding(moves, copyJumps(jumps), piece, x-1, y-1, x-2, y-2);
+      checkLanding(moves, copyJumps(jumps), piece, x+1, y-1, x+2, y-2);
       break;
     case 'bk': // kings can move diagonally any direction
     case 'wk': // kings can move diagonally any direction
-      checkLanding(moves, copyJumps(jumps), x-1, y+1, x-2, y+2);
-      checkLanding(moves, copyJumps(jumps), x+1, y+1, x+2, y+2);
-      checkLanding(moves, copyJumps(jumps), x-1, y-1, x-2, y-2);
-      checkLanding(moves, copyJumps(jumps), x+1, y-1, x+2, y-2);
+      checkLanding(moves, copyJumps(jumps), piece, x-1, y+1, x-2, y+2);
+      checkLanding(moves, copyJumps(jumps), piece, x+1, y+1, x+2, y+2);
+      checkLanding(moves, copyJumps(jumps), piece, x-1, y-1, x-2, y-2);
+      checkLanding(moves, copyJumps(jumps), piece, x+1, y-1, x+2, y-2);
       break;
   }
 }
@@ -314,6 +329,54 @@ function nextTurn() {
   }
 }
 
+/**
+ * Prints the board to console. Remix from Nathan Bean's console printing code from in-class.
+ */
+function printBoard() {
+  console.log('  a b c d e f g h i j');
+  state.board.forEach(function(row, index){
+    console.log(index + " " + row.map(function(square){
+      return square === null ? '_' : square;
+    }).join('|'));
+  });
+}
+
 function main() {
 
+  printBoard();
+
+  if (isRunningInWebpage()) {
+    createVisualUI();
+  } else {
+    //Initialize Readline
+    const rl = readline.createInterface({input: process.stdin, output: process.stdout});
+
+    if (!isRunningInWebpage()) {
+      rl.question("Pick a piece to move, (letter, number): ", function(answer){
+        //Figure out what piece the user asked to move
+        var match = /([a-j]),?\s?([0-9])/.exec(answer);
+        if (match === null) {
+          console.log("Incorrect input.");
+        } else {
+          var x = match[1].charCodeAt(0) - "a".charCodeAt(0);
+          var y = parseInt(match[2]);
+          var piece = state.board[y][x];
+          var moves = getLegalMoves(piece, x, y);
+          moves.forEach(function(move) {
+            if (move.type == 'slide') {
+              console.log("You can slide to " + String.fromCharacterCode(move.x + "a".charCodeAt(0)) + "," + move.y);
+            }
+          });
+        }
+      });
+    }
+  }
+}
+
+if (isRunningInWebpage()) {
+  window.onload = function () {
+    main();
+  };
+} else {
+  main();
 }
