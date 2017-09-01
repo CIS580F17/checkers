@@ -22,6 +22,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: calc((10vh + 10vw) / 2);
+    font-size: calc((9vh + 9vw) / 2);
     cursor: pointer;
 }
