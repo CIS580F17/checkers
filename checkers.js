@@ -41,8 +41,11 @@ var state = {
 var boardDiv = null;
 /** Arrays of interface elements for keeping track */
 var cellDivs = []; //Matches the format of "board"
-/** The cell that is being dragged */
-var draggingCellDiv = null;
+var checkerDivs = [];
+/** The checker that is being dragged */
+var draggingCheckerDiv = null;
+var draggingCheckerX = -1;
+var draggingCheckerY = -1;
 
 /**
  * Initial page load - Use this to create the interface
@@ -61,27 +64,30 @@ function createVisualUI () {
     rowDiv.className = 'RowDiv';
     boardDiv.appendChild(rowDiv);
     cellDivs.push([]);
+    checkerDivs.push([]);
     //Loop through all cells in each row
     for (var x = 0; x < row.length; x++) {
-      var value = row[x];
-      //Creates the cell interface element for each cell
-      var cellDiv = document.createElement('div');
-      cellDiv.className = 'CellDiv';
-      rowDiv.appendChild(cellDiv);
-      //Set the value of the cell div
-      if (value !== null) {
-        cellDiv.innerText = value;
-      }
-      //Add draggable ability
-      cellDiv.setAttribute('draggable', 'true');
-      cellDiv.addEventListener('dragstart', cellDragStart);
-      cellDiv.addEventListener('drop', cellDropEvent);
-      cellDiv.addEventListener('dragover', cellAllowDragEvent);
-      //Set the id to the x and y position of the cell so we can
-      //modify the state board using this information
-      cellDiv.id = x+','+y;
-      //Add cell to cell array
-      cellDivs[y].push(cellDiv);
+      (function (x, y) {
+        //Creates the cell interface element for each cell
+        var cellDiv = document.createElement('div');
+        cellDiv.className = 'CellDiv';
+        rowDiv.appendChild(cellDiv);
+
+        var checkerDiv = document.createElement('div');
+        checkerDiv.classList.add('Checker');
+        cellDiv.appendChild(checkerDiv);
+
+        //Add draggable ability
+        checkerDiv.setAttribute('draggable', 'true');
+        checkerDiv.addEventListener('dragstart', function(event){checkerDragStart(event, x, y);});
+        cellDiv.addEventListener('drop', function(event){cellDropEvent(event, x, y);});
+        cellDiv.addEventListener('dragover', function(event){cellAllowDragEvent(event, x, y)});
+        //Set the id to the x and y position of the cell so we can
+        //modify the state board using this information
+        //Add cell to cell array
+        cellDivs[y].push(cellDiv);
+        checkerDivs[y].push(checkerDiv);
+      })(x, y);
     }
   }
 }
@@ -90,22 +96,31 @@ function createVisualUI () {
  * Handles cell start drag event.
  * @param event
  */
-function cellDragStart(event) {
-  draggingCellDiv = event.target;
+function checkerDragStart(event, x, y) {
+  draggingCheckerDiv = event.target;
+  draggingCheckerX = x;
+  draggingCheckerY = y;
+
+  var moves = getLegalMoves(state.board[y][x], x, y);
 }
 
 /** @function cellDropEvent
  * Handles cell drop event.
  * @param event
+ * @param xTarget
+ * @param yTarget
  */
-function cellDropEvent(event) {
-  var droppedOnCell = event.target;
+function cellDropEvent(event, xTarget, yTarget) {
+
+  console.log('Target: ' + xTarget + ', ' + yTarget);
 
   //Replace the states held in State object
-  var dragX = parseInt(draggingCellDiv.id.substr(0, draggingCellDiv.id.indexOf(',')));
-  var dragY = parseInt(draggingCellDiv.id.substr(draggingCellDiv.id.indexOf(',')+1));
-  var dropX = parseInt(droppedOnCell.id.substr(0, droppedOnCell.id.indexOf(',')));
-  var dropY = parseInt(droppedOnCell.id.substr(droppedOnCell.id.indexOf(',')+1));
+  var dragX = draggingCheckerX;
+  var dragY = draggingCheckerY;
+  var dropX = xTarget;
+  var dropY = yTarget;
+
+  console.log('Swapping ' + dragX + ', ' + dragY + ' for ' + dropX + ', ' + dropY);
 
   var oldDragValue = state.board[dragY][dragX];
   var oldDropValue = state.board[dropY][dropX];
@@ -121,8 +136,11 @@ function cellDropEvent(event) {
 /** @function cellAllowDragEvent
  * Allows the cell to allow drops.
  * @param event
+ * @param x
+ * @param y
  */
-function cellAllowDragEvent(event) {
+function cellAllowDragEvent(event, x, y) {
+  //Only allow drop event if the space is free and valid.
   event.preventDefault();
 }
 
@@ -138,7 +156,18 @@ function fullInterfaceRedraw() {
       if (value === null) {
         value = '';
       }
-      cellDivs[y][x].innerText = value;
+      //Clear checker
+      checkerDivs[y][x].classList.remove('CheckerHidden');
+      checkerDivs[y][x].classList.remove('RedChecker');
+      checkerDivs[y][x].classList.remove('BlackChecker');
+      if (value === '') {
+        //Set the checker div to display none
+        checkerDivs[y][x].classList.add('CheckerHidden');
+      } else if (value === 'w') {
+        checkerDivs[y][x].classList.add('RedChecker');
+      } else if (value === 'b') {
+        checkerDivs[y][x].classList.add('BlackChecker');
+      }
     }
   }
 }
@@ -444,6 +473,7 @@ function consoleGameDecisionLoop() {
 function main() {
   if (isRunningInWebpage()) {
     createVisualUI();
+    fullInterfaceRedraw();
   } else {
     startNextGameLoop();
   }
