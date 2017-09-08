@@ -107,7 +107,6 @@ function createVisualUI() {
  * Clears all highligted squares
  */
 function clearHighlights() {
-  console.log('Clearing highlights');
   //Not a fan of using query selectors.
   var highlighted = document.querySelectorAll('.Highlight');
   highlighted.forEach(function (element) {
@@ -119,7 +118,6 @@ function clearHighlights() {
  * Highlights the available moves of a piece.
  */
 function highlightAvailableMoves(x, y) {
-  console.log('Adding highlights');
   // Get legal moves
   var moves = getLegalMoves(state.board[y][x], x, y);
   // mark checker to move
@@ -128,6 +126,11 @@ function highlightAvailableMoves(x, y) {
   moves.forEach(function (move) {
     if (move.type === 'slide') {
       cellDivs[move.y][move.x].classList.add('Highlight');
+    } else if (move.type === 'jump') {
+      var landings = move['landings'];
+      var lastLandingX = landings[landings.length - 1].x;
+      var lastLandingY = landings[landings.length - 1].y;
+      cellDivs[lastLandingY][lastLandingX].classList.add('Highlight');
     }
   })
 }
@@ -198,6 +201,14 @@ function cellDropEvent(event, xTarget, yTarget) {
         canDrop = true;
         chosenMove = move;
       }
+    } else if (move.type === 'jump') {
+      var landings = move['landings'];
+      var lastLandingX = landings[landings.length - 1].x;
+      var lastLandingY = landings[landings.length - 1].y;
+      if (dropX === lastLandingX && dropY === lastLandingY) {
+        canDrop = true;
+        chosenMove = move;
+      }
     }
   });
 
@@ -232,6 +243,13 @@ function cellAllowDragEvent(event, x, y) {
   moves.forEach(function (move, index) {
     if (move.type === 'slide') {
       if (x === move.x && y === move.y) {
+        canDrop = true;
+      }
+    } else if (move.type === 'jump') {
+      var landings = move['landings'];
+      var lastLandingX = landings[landings.length - 1].x;
+      var lastLandingY = landings[landings.length - 1].y;
+      if (x === lastLandingX && y === lastLandingY) {
         canDrop = true;
       }
     }
