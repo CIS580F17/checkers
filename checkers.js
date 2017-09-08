@@ -2,7 +2,7 @@
 
 readline = null;
 rl = null;
-if (isRunningInWebpage() == false) {
+if (isRunningInWebpage() === false) {
   readline = require('readline');
 
   rl = readline.createInterface({
@@ -13,11 +13,7 @@ if (isRunningInWebpage() == false) {
 
 //Check if running in the webpage or in the console
 function isRunningInWebpage() {
-  if (typeof window === 'undefined') {
-    return false;
-  } else {
-    return true;
-  }
+  return !(typeof window === 'undefined');
 }
 
 /** The state of the game */
@@ -25,16 +21,16 @@ var state = {
   over: false,
   turn: 'b',
   board: [
-    [null,'w',null, 'w', null, 'w',  null, 'w',  null, 'w'],
-    ['w',null,'w',null,'w',null,'w',null,'w',null],
-    [null,'w',null,'w',null,'w',null,'w',null,'w'],
-    ['w',null,'w',null,'w',null,'w',null,'w',null],
+    [null, 'w', null, 'w', null, 'w', null, 'w', null, 'w'],
+    ['w', null, 'w', null, 'w', null, 'w', null, 'w', null],
+    [null, 'w', null, 'w', null, 'w', null, 'w', null, 'w'],
+    ['w', null, 'w', null, 'w', null, 'w', null, 'w', null],
     [null, null, null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, null, null, null],
-    [null,'b',null,'b',null,'b',null,'b',null,'b'],
-    ['b',null,'b',null,'b',null,'b',null,'b',null],
-    [null,'b',null,'b',null,'b',null,'b',null,'b'],
-    ['b',null,'b',null,'b',null,'b',null,'b',null]
+    [null, 'b', null, 'b', null, 'b', null, 'b', null, 'b'],
+    ['b', null, 'b', null, 'b', null, 'b', null, 'b', null],
+    [null, 'b', null, 'b', null, 'b', null, 'b', null, 'b'],
+    ['b', null, 'b', null, 'b', null, 'b', null, 'b', null]
   ]
 };
 /** Holds the board div interface element */
@@ -50,7 +46,7 @@ var draggingCheckerY = -1;
 /**
  * Initial page load - Use this to create the interface
  */
-function createVisualUI () {
+function createVisualUI() {
   //Create the board
   boardDiv = document.createElement('div');
   boardDiv.className = 'BoardDiv';
@@ -70,6 +66,7 @@ function createVisualUI () {
       (function (x, y) {
         //Creates the cell interface element for each cell
         var cellDiv = document.createElement('div');
+        cellDiv.draggable = false;
         cellDiv.className = 'CellDiv';
         rowDiv.appendChild(cellDiv);
 
@@ -77,11 +74,25 @@ function createVisualUI () {
         checkerDiv.classList.add('Checker');
         cellDiv.appendChild(checkerDiv);
 
+
+        checkerDiv.addEventListener('mousedown', function (event) {
+          checkerMouseDown(event, x, y);
+        });
+        checkerDiv.addEventListener('mouseup', function (event) {
+          checkerMouseUp(event, x, y);
+        });
+
         //Add draggable ability
         checkerDiv.setAttribute('draggable', 'true');
-        checkerDiv.addEventListener('dragstart', function(event){checkerDragStart(event, x, y);});
-        cellDiv.addEventListener('drop', function(event){cellDropEvent(event, x, y);});
-        cellDiv.addEventListener('dragover', function(event){cellAllowDragEvent(event, x, y)});
+        checkerDiv.addEventListener('dragstart', function (event) {
+          checkerDragStart(event, x, y);
+        });
+        cellDiv.addEventListener('drop', function (event) {
+          cellDropEvent(event, x, y);
+        });
+        cellDiv.addEventListener('dragover', function (event) {
+          cellAllowDragEvent(event, x, y)
+        });
         //Set the id to the x and y position of the cell so we can
         //modify the state board using this information
         //Add cell to cell array
@@ -92,16 +103,68 @@ function createVisualUI () {
   }
 }
 
+/** @function clearHighlights
+ * Clears all highligted squares
+ */
+function clearHighlights() {
+  console.log('Clearing highlights');
+  //Not a fan of using query selectors.
+  var highlighted = document.querySelectorAll('.Highlight');
+  highlighted.forEach(function (element) {
+    element.classList.remove('Highlight');
+  });
+}
+
+/**
+ * Highlights the available moves of a piece.
+ */
+function highlightAvailableMoves(x, y) {
+  console.log('Adding highlights');
+  // Get legal moves
+  var moves = getLegalMoves(state.board[y][x], x, y);
+  // mark checker to move
+  checkerDivs[y][x].classList.add('Highlight');
+  // Mark squares available for moves
+  moves.forEach(function (move) {
+    if (move.type === 'slide') {
+      cellDivs[move.y][move.x].classList.add('Highlight');
+    }
+  })
+}
+
+function doesPieceBelongToPlayer(x, y) {
+  var piece = state.board[y][x];
+  return (piece != null && piece.charAt(0) === state.turn);
+}
+
 /** @function cellDragStart
  * Handles cell start drag event.
  * @param event
+ * @param x
+ * @param y
  */
 function checkerDragStart(event, x, y) {
+
+  // Make sure the checker is the player's
+  if (!doesPieceBelongToPlayer(x, y)) return;
+
   draggingCheckerDiv = event.target;
   draggingCheckerX = x;
   draggingCheckerY = y;
 
-  var moves = getLegalMoves(state.board[y][x], x, y);
+  clearHighlights();
+  highlightAvailableMoves(x, y);
+}
+
+function checkerMouseDown(event, x, y) {
+  // Make sure the checker is the player's
+  if (!doesPieceBelongToPlayer(x, y)) return;
+  clearHighlights();
+  highlightAvailableMoves(x, y);
+}
+
+function checkerMouseUp(event, x, y) {
+  clearHighlights();
 }
 
 /** @function cellDropEvent
@@ -111,23 +174,39 @@ function checkerDragStart(event, x, y) {
  * @param yTarget
  */
 function cellDropEvent(event, xTarget, yTarget) {
-
-  console.log('Target: ' + xTarget + ', ' + yTarget);
-
   //Replace the states held in State object
   var dragX = draggingCheckerX;
   var dragY = draggingCheckerY;
   var dropX = xTarget;
   var dropY = yTarget;
 
-  console.log('Swapping ' + dragX + ', ' + dragY + ' for ' + dropX + ', ' + dropY);
-
-  var oldDragValue = state.board[dragY][dragX];
-  var oldDropValue = state.board[dropY][dropX];
+  //var oldDragValue = state.board[dragY][dragX];
+  //var oldDropValue = state.board[dropY][dropX];
 
   //Set the values
-  state.board[dragY][dragX] = oldDropValue;
-  state.board[dropY][dropX] = oldDragValue;
+  //state.board[dragY][dragX] = oldDropValue;
+  //state.board[dropY][dropX] = oldDragValue;
+
+  //Only allow placement on a valid move
+  //Get legal moves
+  var moves = getLegalMoves(state.board[dragY][dragX], dragX, dragY);
+  var canDrop = false;
+  var chosenMove = null;
+  moves.forEach(function (move, index) {
+    if (move.type === 'slide') {
+      if (dropX === move.x && dropY === move.y) {
+        canDrop = true;
+        chosenMove = move;
+      }
+    }
+  });
+
+  //Then initiate move
+  if (canDrop) {
+    applyMove(dragX, dragY, chosenMove);
+    clearHighlights();
+    nextTurn();
+  }
 
   //Update the UI
   fullInterfaceRedraw();
@@ -141,6 +220,27 @@ function cellDropEvent(event, xTarget, yTarget) {
  */
 function cellAllowDragEvent(event, x, y) {
   //Only allow drop event if the space is free and valid.
+  var overPiece = state.board[y][x];
+  var holdingPiece = state.board[draggingCheckerY][draggingCheckerX];
+
+  //Make sure the cell we're dragging over is empty
+  if (overPiece != null) return;
+
+  //Make sure the drag is a legal move
+  var moves = getLegalMoves(holdingPiece, draggingCheckerX, draggingCheckerY);
+  var canDrop = false;
+  moves.forEach(function (move, index) {
+    if (move.type === 'slide') {
+      if (x === move.x && y === move.y) {
+        canDrop = true;
+      }
+    }
+  });
+
+  if (canDrop == false) {
+    return;
+  }
+
   event.preventDefault();
 }
 
@@ -171,6 +271,7 @@ function fullInterfaceRedraw() {
     }
   }
 }
+
 /** @function getLegalMoves
  * returns a list of legal moves for the specified
  * piece to make.
@@ -182,24 +283,24 @@ function fullInterfaceRedraw() {
  */
 function getLegalMoves(piece, x, y) {
   var moves = [];
-  switch(piece) {
+  switch (piece) {
     case 'b': // black can only move down the board diagonally
-      checkSlide(moves, x-1, y-1);
-      checkSlide(moves, x+1, y-1);
-      checkJump(moves, {captures:[],landings:[]}, piece, x, y);
+      checkSlide(moves, x - 1, y - 1);
+      checkSlide(moves, x + 1, y - 1);
+      checkJump(moves, {captures: [], landings: []}, piece, x, y);
       break;
     case 'w':  // white can only move up the board diagonally
-      checkSlide(moves, x-1, y+1);
-      checkSlide(moves, x+1, y+1);
-      checkJump(moves, {captures:[],landings:[]}, piece, x, y);
+      checkSlide(moves, x - 1, y + 1);
+      checkSlide(moves, x + 1, y + 1);
+      checkJump(moves, {captures: [], landings: []}, piece, x, y);
       break;
     case 'bk': // kings can move diagonally any direction
     case 'wk': // kings can move diagonally any direction
-      checkSlide(moves, x-1, y+1);
-      checkSlide(moves, x+1, y+1);
-      checkSlide(moves, x-1, y-1);
-      checkSlide(moves, x+1, y-1);
-      checkJump(moves, {captures:[],landings:[]}, piece, x, y);
+      checkSlide(moves, x - 1, y + 1);
+      checkSlide(moves, x + 1, y + 1);
+      checkSlide(moves, x - 1, y - 1);
+      checkSlide(moves, x + 1, y - 1);
+      checkJump(moves, {captures: [], landings: []}, piece, x, y);
       break;
   }
   return moves;
@@ -214,9 +315,9 @@ function getLegalMoves(piece, x, y) {
  */
 function checkSlide(moves, x, y) {
   // Check square is on grid
-  if(x < 0 || x > 9 || y < 0 || y > 9) return;
+  if (x < 0 || x > 9 || y < 0 || y > 9) return;
   // check square is unoccupied
-  if(state.board[y][x]) return;
+  if (state.board[y][x]) return;
   // legal move!  Add it to the move list
   moves.push({type: 'slide', x: x, y: y});
 }
@@ -248,21 +349,21 @@ function copyJumps(jumps) {
  * @param {integer} y - the current y position of the peice
  */
 function checkJump(moves, jumps, piece, x, y) {
-  switch(piece) {
+  switch (piece) {
     case 'b': // black can only move down the board diagonally
-      checkLanding(moves, copyJumps(jumps), piece, x-1, y-1, x-2, y-2);
-      checkLanding(moves, copyJumps(jumps), piece, x+1, y-1, x+2, y-2);
+      checkLanding(moves, copyJumps(jumps), piece, x - 1, y - 1, x - 2, y - 2);
+      checkLanding(moves, copyJumps(jumps), piece, x + 1, y - 1, x + 2, y - 2);
       break;
     case 'w':  // white can only move up the board diagonally
-      checkLanding(moves, copyJumps(jumps), piece, x-1, y+1, x-2, y+2);
-      checkLanding(moves, copyJumps(jumps), piece, x+1, y+1, x+2, y+2);
+      checkLanding(moves, copyJumps(jumps), piece, x - 1, y + 1, x - 2, y + 2);
+      checkLanding(moves, copyJumps(jumps), piece, x + 1, y + 1, x + 2, y + 2);
       break;
     case 'bk': // kings can move diagonally any direction
     case 'wk': // kings can move diagonally any direction
-      checkLanding(moves, copyJumps(jumps), piece, x-1, y+1, x-2, y+2);
-      checkLanding(moves, copyJumps(jumps), piece, x+1, y+1, x+2, y+2);
-      checkLanding(moves, copyJumps(jumps), piece, x-1, y-1, x-2, y-2);
-      checkLanding(moves, copyJumps(jumps), piece, x+1, y-1, x+2, y-2);
+      checkLanding(moves, copyJumps(jumps), piece, x - 1, y + 1, x - 2, y + 2);
+      checkLanding(moves, copyJumps(jumps), piece, x + 1, y + 1, x + 2, y + 2);
+      checkLanding(moves, copyJumps(jumps), piece, x - 1, y - 1, x - 2, y - 2);
+      checkLanding(moves, copyJumps(jumps), piece, x + 1, y - 1, x + 2, y - 2);
       break;
   }
 }
@@ -283,12 +384,12 @@ function checkJump(moves, jumps, piece, x, y) {
  */
 function checkLanding(moves, jumps, piece, cx, cy, lx, ly) {
   // Check landing square is on grid
-  if(lx < 0 || lx > 9 || ly < 0 || ly > 9) return;
+  if (lx < 0 || lx > 9 || ly < 0 || ly > 9) return;
   // Check landing square is unoccupied
-  if(state.board[ly][lx]) return;
+  if (state.board[ly][lx]) return;
   // Check capture square is occuped by opponent
-  if((piece === 'b' || piece === 'bk') && !(state.board[cy][cx] === 'w' || state.board[cy][cx] === 'wk')) return;
-  if((piece === 'w' || piece === 'wk') && !(state.board[cy][cx] === 'b' || state.board[cy][cx] === 'bk')) return;
+  if ((piece === 'b' || piece === 'bk') && !(state.board[cy][cx] === 'w' || state.board[cy][cx] === 'wk')) return;
+  if ((piece === 'w' || piece === 'wk') && !(state.board[cy][cx] === 'b' || state.board[cy][cx] === 'bk')) return;
   // legal jump! add it to the moves list
   jumps.captures.push({x: cx, y: cy});
   jumps.landings.push({x: lx, y: ly});
@@ -307,11 +408,11 @@ function checkLanding(moves, jumps, piece, cx, cy, lx, ly) {
  */
 function applyMove(x, y, move) {
   // TODO: Apply the move
-  if(move.type === "slide") {
+  if (move.type === "slide") {
     state.board[move.y][move.x] = state.board[y][x];
     state.board[y][x] = null;
   } else {
-    move.captures.forEach(function(square){
+    move.captures.forEach(function (square) {
       state.board[square.y][square.x] = null;
     });
     var index = move.landings.length - 1;
@@ -330,21 +431,21 @@ function applyMove(x, y, move) {
 function checkForVictory() {
   var wCount = 0;
   var bCount = 0;
-  for(y = 0; y < 10; y++) {
-    for(x = 0; x < 10; x++) {
-      if(state.board[y][x] === "w" || state.board[y][x] === "wk") {
+  for (y = 0; y < 10; y++) {
+    for (x = 0; x < 10; x++) {
+      if (state.board[y][x] === "w" || state.board[y][x] === "wk") {
         wCount++;
       }
-      if(state.board[y][x] === "b" || state.board[y][x] === "bk") {
+      if (state.board[y][x] === "b" || state.board[y][x] === "bk") {
         bCount++;
       }
     }
   }
-  if(wCount == 0) {
+  if (wCount == 0) {
     state.over = true;
     return 'black wins';
   }
-  if(bCount == 0) {
+  if (bCount == 0) {
     state.over = true;
     return 'white wins';
   }
@@ -356,7 +457,7 @@ function checkForVictory() {
  * turn property of state.
  */
 function nextTurn() {
-  if(state.turn === 'b') state.turn = 'w';
+  if (state.turn === 'b') state.turn = 'w';
   else state.turn = 'b';
 }
 
@@ -366,9 +467,9 @@ function nextTurn() {
  */
 function printBoard() {
   console.log("   a b c d e f g h i j");
-  state.board.forEach(function(row, index){
-    var ascii = row.map(function(square){
-      if(!square) return '_';
+  state.board.forEach(function (row, index) {
+    var ascii = row.map(function (square) {
+      if (!square) return '_';
       else return square;
     }).join('|');
     console.log(index, ascii);
@@ -382,14 +483,14 @@ function printBoard() {
  * @return {String} A string describing the jump sequence
  */
 function getJumpString(move) {
-  var jumps = move.landings.map(function(landing) {
+  var jumps = move.landings.map(function (landing) {
     return String.fromCharCode(97 + landing.x) + "," + landing.y;
   }).join(' to ');
-  return "jump to " + jumps + " capturing " + move.captures.length + " piece" + ((move.captures.length > 1)?'s':'');
+  return "jump to " + jumps + " capturing " + move.captures.length + " piece" + ((move.captures.length > 1) ? 's' : '');
 }
 
 function startNextGameLoop() {
-  setTimeout(function(){
+  setTimeout(function () {
     consoleGameDecisionLoop();
   }, 0);
 }
@@ -399,10 +500,10 @@ function consoleGameDecisionLoop() {
   printBoard();
   // offer instructions
   console.log(state.turn + "'s turn");
-  rl.question("Pick a piece to move, (letter, number): ", function(answer) {
+  rl.question("Pick a piece to move, (letter, number): ", function (answer) {
     // Figure out what piece the user asked to move
     var match = /([a-j]),?\s?([0-9])/.exec(answer);
-    if(match && match.length > 1) {
+    if (match && match.length > 1) {
       var x = match[1].toLowerCase().charCodeAt(0) - 'a'.charCodeAt(0);
       var y = parseInt(match[2]);
       if (y < 0 || y > state.board.length - 1) {
@@ -413,23 +514,23 @@ function consoleGameDecisionLoop() {
       var piece = state.board[y][x];
       // Get available moves
       var moves = getLegalMoves(piece, x, y);
-      if(moves.length === 0) {
+      if (moves.length === 0) {
         console.log("\nNo legal moves for ", piece, "at", x, ",", y);
         startNextGameLoop();
         return;
       } else {
         // Print available moves
         console.log("\nAvailable moves for ", match[1] + "," + match[2]);
-        console.log("C. Cancel")
-        moves.forEach(function(move, index) {
-          if(move.type === 'slide') {
+        console.log("C. Cancel");
+        moves.forEach(function (move, index) {
+          if (move.type === 'slide') {
             console.log(index + ". You can slide to " + String.fromCharCode(97 + move.x) + "," + move.y);
           } else {
             console.log(index + ". You can " + getJumpString(move));
           }
         });
         //Prompt the user to pick a move
-        rl.question("Pick your move from the list: ", function(answer){
+        rl.question("Pick your move from the list: ", function (answer) {
           if (answer.substring(0, 1).toLowerCase() === 'c') {
             startNextGameLoop();
             return;
