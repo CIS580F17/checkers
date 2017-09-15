@@ -66,3 +66,28 @@
 .CellDiv.DropTarget {
     background-color: orange;
 }
+
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+.ContainerDiv {
+    position: absolute;
+    width: calc(100% - 20px);
+    height: calc(100% - 20px);
+    top: 10px;
+    left: 10px;
+    text-align: center;
+}
+canvas {
+    border: solid 1px black;
+    box-shadow: 5px 5px 5px black;
+    position: relative;
+}
+.CanvasGreaterHeight {
+    width: 100%;
+}
+.CanvasGreaterWidth {
+    height: 100%;
+}
