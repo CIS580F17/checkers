@@ -6,6 +6,7 @@ class CanvasBoard {
     this.ctx = null;
     this.canvas = null;
     this.containerDiv = null;
+    this.messageDiv = null;
     this.gameDataLogic = new GameDataLogic();
 
     this.highlightCheckerX = null;
@@ -15,7 +16,7 @@ class CanvasBoard {
     this.dragCheckerY = null;
 
     this.mouseX = null;
-    this.mouseY = null
+    this.mouseY = null;
 
     window.addEventListener('resize', Utility.CreateFunction(this, this.windowResize));
   }
@@ -24,7 +25,7 @@ class CanvasBoard {
    * Set the canvas scaling based on the window size.
    */
   windowResize() {
-    if (window.innerWidth > window.innerHeight) {
+    if (window.innerWidth > window.innerHeight - 30) {
       //Set the canvas to scale by height
       if (!this.canvas.classList.contains('CanvasGreaterWidth')) {
         this.canvas.classList.remove('CanvasGreaterHeight');
@@ -43,6 +44,8 @@ class CanvasBoard {
    * Sets up the HTML5 canvas.
    */
   setupCanvas() {
+    this.messageDiv = document.createElement('div');
+    this.messageDiv.className = 'MessageDiv';
     this.containerDiv = document.createElement('div');
     this.containerDiv.className = 'ContainerDiv';
     this.canvas = document.createElement('canvas');
@@ -52,11 +55,14 @@ class CanvasBoard {
     this.canvas.width = 1000;
     this.canvas.height = 1000;
     this.containerDiv.appendChild(this.canvas);
+    document.body.appendChild(this.messageDiv);
     document.body.appendChild(this.containerDiv);
     this.ctx = this.canvas.getContext('2d');
     this.renderBoard();
 
     this.windowResize();
+
+    this.updateGameStatusMessage();
   }
 
   mouseDown(event) {
@@ -114,13 +120,41 @@ class CanvasBoard {
         this.gameDataLogic.applyMove(this.dragCheckerX, this.dragCheckerY, chosenMove);
         this.gameDataLogic.nextTurn();
       }
+      this.updateGameStatusMessage();
     }
 
     this.dragCheckerX = null;
     this.dragCheckerY = null;
+    this.highlightCheckerY = null;
+    this.highlightCheckerX = null;
 
     //Redraw
     this.renderBoard();
+  }
+
+  /**
+   * Sets the message of the message div.
+   * @param text
+   */
+  setMessage(text) {
+    this.messageDiv.innerText = text;
+  }
+
+  updateGameStatusMessage() {
+    let victory = this.gameDataLogic.checkForVictory();
+    if (victory == null) {
+      if (this.gameDataLogic.getTurn() == 'b') {
+        this.setMessage('Black\'s Turn');
+      } else {
+        this.setMessage('White\'s Turn');
+      }
+    } else {
+      if (victory == 'black wins') {
+        this.setMessage('Black has Won!');
+      } else {
+        this.setMessage('White has Won!');
+      }
+    }
   }
 
   /**
@@ -223,6 +257,14 @@ class CanvasBoard {
         this.ctx.beginPath();
         this.ctx.arc(x*100 + 50, y * 100 + 50, 40, 40, 0, Math.PI * 2);
         this.ctx.fill();
+        let piece = this.gameDataLogic.getPiece(this.highlightCheckerX, this.highlightCheckerY);
+        //Draw kings
+        if (piece.indexOf('k') != -1) {
+          this.ctx.fillStyle = 'red';
+          this.ctx.textAlign = 'center';
+          this.ctx.font="20px Arial";
+          this.ctx.fillText('King', x * 100 + 50, y * 100 + 50);
+        }
       }
       // Mark squares available for moves
       moves.forEach(Utility.CreateFunction(this, function (move) {

@@ -19,6 +19,10 @@ class GameDataLogic {
     };
   }
 
+  getTurn() {
+    return this.state.turn;
+  }
+
   doesPieceBelongToPlayer(x, y) {
     var piece = this.getPiece(x, y);
     return (piece != null && piece.charAt(0) === this.state.turn);
@@ -121,6 +125,7 @@ class GameDataLogic {
         break;
       case 'bk': // kings can move diagonally any direction
       case 'wk': // kings can move diagonally any direction
+        console.log('Jumps: ' + JSON.stringify(jumps));
         this.checkLanding(moves, this.copyJumps(jumps), piece, x - 1, y + 1, x - 2, y + 2);
         this.checkLanding(moves, this.copyJumps(jumps), piece, x + 1, y + 1, x + 2, y + 2);
         this.checkLanding(moves, this.copyJumps(jumps), piece, x - 1, y - 1, x - 2, y - 2);
@@ -145,22 +150,32 @@ class GameDataLogic {
    */
   checkLanding(moves, jumps, piece, cx, cy, lx, ly) {
     // Check landing square is on grid
-    if (lx < 0 || lx > 9 || ly < 0 || ly > 9) return;
+    if (lx < 0 || lx > this.state.board.length - 1 || ly < 0 || ly > this.state.board.length - 1) return;
     // Check landing square is unoccupied
     if (this.getPiece(lx, ly)) return;
     // Check capture square is occuped by opponent
     if ((piece === 'b' || piece === 'bk') && !(this.getPiece(cx, cy) === 'w' || this.getPiece(cx, cy) === 'wk')) return;
     if ((piece === 'w' || piece === 'wk') && !(this.getPiece(cx, cy) === 'b' || this.getPiece(cx, cy) === 'bk')) return;
     // legal jump! add it to the moves list
-    jumps.captures.push({x: cx, y: cy});
-    jumps.landings.push({x: lx, y: ly});
-    moves.push({
-      type: 'jump',
-      captures: jumps.captures.slice(),
-      landings: jumps.landings.slice()
+    //But only add it if it doesn't already exist
+    let containsDuplicateLanding = false;
+    jumps.landings.forEach(function (landing){
+      if (landing.x == lx && landing.y == ly) {
+        containsDuplicateLanding = true;
+      }
     });
-    // check for further jump opportunities
-    this.checkJump(moves, jumps, piece, lx, ly);
+    if (!containsDuplicateLanding) {
+      jumps.captures.push({x: cx, y: cy});
+      jumps.landings.push({x: lx, y: ly});
+
+      moves.push({
+        type: 'jump',
+        captures: jumps.captures.slice(),
+        landings: jumps.landings.slice()
+      });
+      // check for further jump opportunities
+      this.checkJump(moves, jumps, piece, lx, ly);
+    }
   }
 
   /**
@@ -208,8 +223,8 @@ class GameDataLogic {
   checkForVictory() {
     var wCount = 0;
     var bCount = 0;
-    for (y = 0; y < 10; y++) {
-      for (x = 0; x < 10; x++) {
+    for (let y = 0; y < 10; y++) {
+      for (let x = 0; x < 10; x++) {
         if (this.getPiece(x, y) === "w" || this.getPiece(x, y) === "wk") {
           wCount++;
         }

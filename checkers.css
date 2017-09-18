@@ -72,11 +72,19 @@ html, body {
     padding: 0;
 }
 
+.MessageDiv {
+    position: absolute;
+    top: 5px;
+    width: 100%;
+    text-align: center;
+    font-size: 30px;
+}
+
 .ContainerDiv {
     position: absolute;
     width: calc(100% - 20px);
-    height: calc(100% - 20px);
-    top: 10px;
+    height: calc(100% - 20px - 30px);
+    top: 40px;
     left: 10px;
     text-align: center;
 }
