@@ -20,7 +20,7 @@ class GameDataLogic {
   }
 
   doesPieceBelongToPlayer(x, y) {
-    var piece = this.state.board[y][x];
+    var piece = this.getPiece(x, y);
     return (piece != null && piece.charAt(0) === this.state.turn);
   }
 
@@ -70,7 +70,7 @@ class GameDataLogic {
     // Check square is on grid
     if (x < 0 || x > 9 || y < 0 || y > 9) return;
     // check square is unoccupied
-    if (this.state.board[y][x]) return;
+    if (this.getPiece(x, y)) return;
     // legal move!  Add it to the move list
     moves.push({type: 'slide', x: x, y: y});
   }
@@ -88,6 +88,14 @@ class GameDataLogic {
       captures: jumps.captures.slice()
     }
     return newJumps;
+  }
+
+  getPiece(x, y) {
+    return this.state.board[y][x];
+  }
+
+  setPiece (x, y, value) {
+    this.state.board[y][x] = value;
   }
 
   /** @function checkJump
@@ -139,10 +147,10 @@ class GameDataLogic {
     // Check landing square is on grid
     if (lx < 0 || lx > 9 || ly < 0 || ly > 9) return;
     // Check landing square is unoccupied
-    if (this.state.board[ly][lx]) return;
+    if (this.getPiece(lx, ly)) return;
     // Check capture square is occuped by opponent
-    if ((piece === 'b' || piece === 'bk') && !(this.state.board[cy][cx] === 'w' || this.state.board[cy][cx] === 'wk')) return;
-    if ((piece === 'w' || piece === 'wk') && !(this.state.board[cy][cx] === 'b' || this.state.board[cy][cx] === 'bk')) return;
+    if ((piece === 'b' || piece === 'bk') && !(this.getPiece(cx, cy) === 'w' || this.getPiece(cx, cy) === 'wk')) return;
+    if ((piece === 'w' || piece === 'wk') && !(this.getPiece(cx, cy) === 'b' || this.getPiece(cx, cy) === 'bk')) return;
     // legal jump! add it to the moves list
     jumps.captures.push({x: cx, y: cy});
     jumps.landings.push({x: lx, y: ly});
@@ -155,22 +163,36 @@ class GameDataLogic {
     this.checkJump(moves, jumps, piece, lx, ly);
   }
 
+  /**
+   * Checks a piece if it is a king and applies it.
+   */
+  checkAndApplyKing(x, y) {
+    let piece = this.getPiece(x, y);
+    if (y == 0 && piece == 'b') {
+      this.setPiece(x, y, 'bk')
+    }
+    if (y == this.state.board.length - 1 && piece == 'w') {
+      this.setPiece(x, y, 'wk')
+    }
+  }
+
   /** @function ApplyMove
    * A function to apply the selected move to the game
    * @param {object} move - the move to apply.
    */
   applyMove(x, y, move) {
-    // TODO: Apply the move
     if (move.type === "slide") {
-      this.state.board[move.y][move.x] = this.state.board[y][x];
-      this.state.board[y][x] = null;
+      this.setPiece(move.x, move.y, this.getPiece(x, y));
+      this.setPiece(x, y, null);
+      this.checkAndApplyKing(move.x, move.y);
     } else {
-      move.captures.forEach(function (square) {
-        this.state.board[square.y][square.x] = null;
-      });
+      move.captures.forEach(Utility.CreateFunction(this, function (square) {
+        this.setPiece(square.x, square.y, null);
+      }));
       var index = move.landings.length - 1;
-      this.state.board[move.landings[index].y][move.landings[index].x] = this.state.board[y][x];
-      this.state.board[y][x] = null;
+      this.setPiece(move.landings[index].x, move.landings[index].y, this.getPiece(x, y));
+      this.setPiece(x, y, null);
+      this.checkAndApplyKing(move.landings[index].x, move.landings[index].y);
     }
   }
 
@@ -188,10 +210,10 @@ class GameDataLogic {
     var bCount = 0;
     for (y = 0; y < 10; y++) {
       for (x = 0; x < 10; x++) {
-        if (this.state.board[y][x] === "w" || this.state.board[y][x] === "wk") {
+        if (this.getPiece(x, y) === "w" || this.getPiece(x, y) === "wk") {
           wCount++;
         }
-        if (this.state.board[y][x] === "b" || this.state.board[y][x] === "bk") {
+        if (this.getPiece(x, y) === "b" || this.getPiece(x, y) === "bk") {
           bCount++;
         }
       }

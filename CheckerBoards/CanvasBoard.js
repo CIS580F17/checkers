@@ -81,10 +81,40 @@ class CanvasBoard {
 
   mouseUp(event) {
     //Get mouse position
-    let x = this.getCanvasMouseX(event);
-    let y = this.getCanvasMouseY(event);
+    let dropX = this.getCanvasMouseX(event);
+    let dropY = this.getCanvasMouseY(event);
 
+    //Move the dragged piece
+    if (this.dragCheckerX != null) {
+      let moves = this.gameDataLogic.getLegalMoves(
+        this.gameDataLogic.getPiece(this.dragCheckerX,this.dragCheckerY),
+        this.dragCheckerX,
+        this.dragCheckerY);
+      let canDrop = false;
+      let chosenMove = null;
+      moves.forEach(function (move, index) {
+        if (move.type === 'slide') {
+          if (dropX === move.x && dropY === move.y) {
+            canDrop = true;
+            chosenMove = move;
+          }
+        } else if (move.type === 'jump') {
+          var landings = move['landings'];
+          var lastLandingX = landings[landings.length - 1].x;
+          var lastLandingY = landings[landings.length - 1].y;
+          if (dropX === lastLandingX && dropY === lastLandingY) {
+            canDrop = true;
+            chosenMove = move;
+          }
+        }
+      });
 
+      //Then initiate move
+      if (canDrop) {
+        this.gameDataLogic.applyMove(this.dragCheckerX, this.dragCheckerY, chosenMove);
+        this.gameDataLogic.nextTurn();
+      }
+    }
 
     this.dragCheckerX = null;
     this.dragCheckerY = null;
@@ -154,21 +184,33 @@ class CanvasBoard {
         if ((x+y) % 2 !== 0) {
           this.ctx.fillStyle = 'gray';
           this.ctx.fillRect(x * 100, y * 100, 100, 100);
-          if (this.gameDataLogic.state.board[y][x] &&
-            !(this.dragCheckerX ===x && this.dragCheckerY === y)) {
-            if (this.gameDataLogic.state.board[y][x] === "w" || this.gameDataLogic.state.board[y][x] === "wk") {
+          let piece = this.gameDataLogic.getPiece(x, y);
+          if (piece &&
+            !(this.dragCheckerX === x && this.dragCheckerY === y)) {
+            if (piece === "w" || piece === "wk") {
               this.ctx.fillStyle = 'white';
-            } else if (this.gameDataLogic.state.board[y][x] === "b" || this.gameDataLogic.state.board[y][x] === "bk") {
+            } else if (piece === "b" || piece === "bk") {
               this.ctx.fillStyle = 'black';
             }
             this.ctx.beginPath();
             this.ctx.arc(x*100 + 50, y * 100 + 50, 40, 40, 0, Math.PI * 2);
             this.ctx.fill();
+            //Draw kings
+            if (piece.indexOf('k') != -1) {
+              this.ctx.fillStyle = 'red';
+              this.ctx.textAlign = 'center';
+              this.ctx.font="20px Arial";
+              this.ctx.fillText('King', x * 100 + 50, y * 100 + 50);
+            }
           }
         }
       }
     }
     //Draw the highlighted checker
+    if (this.dragCheckerX != null) {
+      this.highlightCheckerX = this.dragCheckerX;
+      this.highlightCheckerY = this.dragCheckerY;
+    }
     if (this.highlightCheckerX != null) {
       let x = this.highlightCheckerX;
       let y = this.highlightCheckerY
@@ -198,10 +240,26 @@ class CanvasBoard {
     }
     //Draw the dragged checker
     if (this.dragCheckerX != null) {
-      this.ctx.fillStyle = 'yellow';
+      let piece = this.gameDataLogic.getPiece(this.dragCheckerX, this.dragCheckerY);
+      if (piece === "w" || piece === "wk") {
+        this.ctx.fillStyle = 'white';
+      } else if (piece === "b" || piece === "bk") {
+        this.ctx.fillStyle = 'black';
+      }
+      this.ctx.strokeStyle = 'yellow';
       this.ctx.beginPath();
       this.ctx.arc(this.mouseX, this.mouseY, 40, 40, 0, Math.PI * 2);
       this.ctx.fill();
+      this.ctx.stroke();
+
+      //Draw kings
+      if (piece.indexOf('k') != -1) {
+        this.ctx.fillStyle = 'red';
+        this.ctx.textAlign = 'center';
+        this.ctx.fontSize = '20px';
+        this.ctx.font="20px Arial";
+        this.ctx.fillText('King', this.mouseX, this.mouseY);
+      }
     }
   }
 }
